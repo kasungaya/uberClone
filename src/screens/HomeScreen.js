@@ -1,14 +1,55 @@
 import {StyleSheet, Text, View, Dimensions, ScrollView, Image, FlatList} from 'react-native'
-import React from 'react'
+import React, {useState, useRef, useEffect} from 'react'
 import {Icon} from "@rneui/base"
+import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import {StatusBar} from "expo-status-bar"
 import {filterData} from "../global/data"
+import {makeStyle} from "../global/mapStyle"
+import * as Location from "expo-location"
 
 const SCREEN_WIDTH = Dimensions.get("window").width
 
 import {colors, parameters} from '../global/styles'
 
 const HomeScreen = () => {
+
+    const [latlng,setLatLng] = useState({})
+
+    const checkPermission = async () => {
+        const hasPermission = await Location.requestForegroundPermissionsAsync();
+        if (hasPermission.status === 'granted') {
+            const permission = await askPermission();
+            return permission;
+        }
+        return true;
+    }
+
+    const askPermission = async () => {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        return permission.status === 'granted';
+    }
+
+    const getLocation = async () => {
+        try {
+            const {granted} = await Location.requestForegroundPermissionsAsync();
+            if (!granted) return;
+            const {
+                coords: {latitude, longitude},
+            } = await Location.getCurrentPositionAsync();
+            setLatLng({latitude:latitude,longitude:longitude})
+        }catch (err){
+
+        }
+    }
+
+    useEffect(()=>{
+        checkPermission();
+        getLocation();
+        console.log(latlng);
+    })
+
+    const _map = useRef(1);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -119,6 +160,24 @@ const HomeScreen = () => {
                               size={26}
                         />
                     </View>
+                </View>
+
+                <Text style={styles.text4}>Around you</Text>
+
+                <View style={{alignItems: "center", justifyContent: "center"}}>
+                    <MapView
+                        ref={_map}
+                        provider={PROVIDER_GOOGLE}
+                        style={styles.map}
+                        customMapStyle={makeStyle}
+                        showsUserLocation={true}
+                        followsUserLocation={true}
+                        rotateEnabled={true}
+                        zoomEnabled={true}
+                        toolbarEnabled={true}
+                    >
+
+                    </MapView>
                 </View>
             </ScrollView>
             <StatusBar style='light' backgroundColor='#2058c0' translucent={true}/>
